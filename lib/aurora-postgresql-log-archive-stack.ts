@@ -1,16 +1,24 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import { LambdaConstruct } from "./construct/lambda-construct";
+import { AuroraPostgreSqlLogArchiveProperty } from "../parameter/index";
+
+export interface AuroraPostgreSqlLogArchiveStackProperty
+  extends cdk.StackProps,
+    AuroraPostgreSqlLogArchiveProperty {}
 
 export class AuroraPostgresqlLogArchiveStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    props: AuroraPostgreSqlLogArchiveStackProperty
+  ) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
-
-    // example resource
-    // const queue = new sqs.Queue(this, 'AuroraPostgresqlLogArchiveQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    const lambdaConstruct = new LambdaConstruct(this, "LambdaConstruct", {
+      ...props.lambdaProperty,
+      ...props.dbClusterProperty,
+      ...props.logDestinationProperty,
+    });
   }
 }
