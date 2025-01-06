@@ -11,7 +11,7 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 
 # 定数定義
 LOG_FILENAME_PATTERN = r"postgresql\.log\.\d{4}-\d{2}-\d{2}-\d{4}$"
-MAX_WORKERS = 10
+MAX_WORKERS = 4
 DEFAULT_LOG_RANGE_MINUTES = 180
 
 
@@ -395,9 +395,9 @@ class DbClusterPostgreSqlLogFilter:
 
             all_logs = []
 
-            # ThreadPoolExecutorで並列処理を実行
-            with ThreadPoolExecutor(MAX_WORKERS) as executor:
-                # 各DBインスタンスに対して並列でログ処理を実行
+            # ThreadPoolExecutorで並行処理を実行
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                # 各DBインスタンスに対して並行でログ処理を実行
                 future_to_instance = {
                     executor.submit(self.filter_instance_logs, db_instance): db_instance
                     for db_instance in db_instances
