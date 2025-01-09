@@ -71,8 +71,10 @@ export class WorkflowConstruct extends BaseConstruct {
       this,
       "testStateMachine",
       {
-        definition: dbClusterPostgreSqlLogFilter.next(
-          map.itemProcessor(dbClusterPostgreSqlLogUploader)
+        definitionBody: cdk.aws_stepfunctions.DefinitionBody.fromChainable(
+          dbClusterPostgreSqlLogFilter.next(
+            map.itemProcessor(dbClusterPostgreSqlLogUploader)
+          )
         ),
         tracingEnabled: true,
       }
