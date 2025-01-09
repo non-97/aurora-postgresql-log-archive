@@ -25,6 +25,7 @@ class LogFile:
     """ログファイル情報を表すデータクラス"""
 
     DbInstanceIdentifier: str
+    LogDestinationBucket: str
     LastWritten: int
     LogFileName: str
     ObjectKey: str
@@ -33,6 +34,7 @@ class LogFile:
         """辞書型に変換"""
         return {
             "DbInstanceIdentifier": self.DbInstanceIdentifier,
+            "LogDestinationBucket": self.LogDestinationBucket,
             "LastWritten": self.LastWritten,
             "LogFileName": self.LogFileName,
             "ObjectKey": self.ObjectKey,
@@ -162,7 +164,11 @@ class DbClusterPostgreSqlLogFilter:
             )
 
             log_files = [
-                {**log_file, "DbInstanceIdentifier": db_instance}
+                {
+                    **log_file,
+                    "DbInstanceIdentifier": db_instance,
+                    "LogDestinationBucket": self.config.log_destination_bucket,
+                }
                 for log_file in response["DescribeDBLogFiles"]
             ]
 
@@ -354,6 +360,7 @@ class DbClusterPostgreSqlLogFilter:
                         DbInstanceIdentifier=log_file["DbInstanceIdentifier"],
                         LastWritten=log_file["LastWritten"],
                         LogFileName=log_file["LogFileName"],
+                        LogDestinationBucket=log_file["LogDestinationBucket"],
                         ObjectKey=object_key,
                     )
                 )

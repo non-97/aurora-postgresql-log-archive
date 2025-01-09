@@ -40,11 +40,41 @@ export class WorkflowConstruct extends BaseConstruct {
         }
       );
 
+    const dbClusterPostgreSqlLogUploader =
+      new cdk.aws_stepfunctions_tasks.LambdaInvoke(
+        this,
+        "DbClusterPostgreSqlLogUploader",
+        {
+          lambdaFunction: props.lambdaConstruct.dbClusterPostgreSqlLogUploader,
+          payload: cdk.aws_stepfunctions.TaskInput.fromObject({
+            DbInstanceIdentifier: cdk.aws_stepfunctions.JsonPath.stringAt(
+              "$.DbInstanceIdentifier"
+            ),
+            LogDestinationBucket: cdk.aws_stepfunctions.JsonPath.stringAt(
+              "$.LogDestinationBucket"
+            ),
+            LastWritten:
+              cdk.aws_stepfunctions.JsonPath.stringAt("$.LastWritten"),
+            LogFileName:
+              cdk.aws_stepfunctions.JsonPath.stringAt("$.LogFileName"),
+            ObjectKey: cdk.aws_stepfunctions.JsonPath.stringAt("$.ObjectKey"),
+          }),
+        }
+      );
+
+    const map = new cdk.aws_stepfunctions.Map(this, "Map", {
+      itemsPath: "$.Payload",
+      maxConcurrency: 30,
+      resultPath: "$.Output",
+    });
+
     const stateMachine = new cdk.aws_stepfunctions.StateMachine(
       this,
       "testStateMachine",
       {
-        definition: dbClusterPostgreSqlLogFilter,
+        definition: dbClusterPostgreSqlLogFilter.next(
+          map.itemProcessor(dbClusterPostgreSqlLogUploader)
+        ),
         tracingEnabled: true,
       }
     );

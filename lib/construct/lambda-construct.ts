@@ -16,6 +16,8 @@ export interface LambdaConstructProps
 
 export class LambdaConstruct extends BaseConstruct {
   readonly dbClusterPostgreSqlLogFilter: cdk.aws_lambda.IFunction;
+  readonly dbClusterPostgreSqlLogUploader: cdk.aws_lambda.IFunction;
+
   constructor(scope: Construct, id: string, props: LambdaConstructProps) {
     super(scope, id, props);
 
@@ -43,7 +45,7 @@ export class LambdaConstruct extends BaseConstruct {
               cdk.Stack.of(this).account
             }:db:*`,
           ],
-          actions: ["rds:DescribeDBLogFiles"],
+          actions: ["rds:DescribeDBLogFiles", "rds:DownloadCompleteDBLogFile"],
         }),
         new cdk.aws_iam.PolicyStatement({
           effect: cdk.aws_iam.Effect.ALLOW,
@@ -51,7 +53,7 @@ export class LambdaConstruct extends BaseConstruct {
             `arn:aws:s3:::${props.bucketName}`,
             `arn:aws:s3:::${props.bucketName}/*`,
           ],
-          actions: ["s3:ListBucket", "s3:GetObject"],
+          actions: ["s3:ListBucket", "s3:GetObject", "s3:PutObject"],
         }),
       ],
     });
@@ -89,7 +91,7 @@ export class LambdaConstruct extends BaseConstruct {
         ),
         role,
         architecture: cdk.aws_lambda.Architecture.ARM_64,
-        timeout: cdk.Duration.seconds(20),
+        timeout: cdk.Duration.seconds(30),
         tracing: cdk.aws_lambda.Tracing.ACTIVE,
         logRetention: cdk.aws_logs.RetentionDays.ONE_YEAR,
         loggingFormat: cdk.aws_lambda.LoggingFormat.JSON,
@@ -102,9 +104,39 @@ export class LambdaConstruct extends BaseConstruct {
         },
       }
     );
-
     role.node.tryRemoveChild("DefaultPolicy");
-
     this.dbClusterPostgreSqlLogFilter = dbClusterPostgreSqlLogFilter;
+
+    const dbClusterPostgreSqlLogUploader = new cdk.aws_lambda.Function(
+      this,
+      "DbClusterPostgreSqlLogUploader",
+      {
+        runtime: cdk.aws_lambda.Runtime.PYTHON_3_13,
+        handler: "index.lambda_handler",
+        code: cdk.aws_lambda.Code.fromAsset(
+          path.join(
+            __dirname,
+            "../src/lambda/db_cluster_postgresql_log_uploader"
+          )
+        ),
+        role,
+        architecture: cdk.aws_lambda.Architecture.ARM_64,
+        memorySize: 1024,
+        timeout: cdk.Duration.seconds(600),
+        ephemeralStorageSize: cdk.Size.gibibytes(2),
+        tracing: cdk.aws_lambda.Tracing.ACTIVE,
+        logRetention: cdk.aws_logs.RetentionDays.ONE_YEAR,
+        loggingFormat: cdk.aws_lambda.LoggingFormat.JSON,
+        applicationLogLevelV2: props.functionApplicationLogLevel,
+        systemLogLevelV2: props.functionSystemLogLevel,
+        layers: [lambdaPowertoolsLayer],
+        environment: {
+          POWERTOOLS_LOG_LEVEL: props.powertoolsLogLevel || "INFO",
+          POWERTOOLS_SERVICE_NAME: "db-cluster-postgresql-log-uploader",
+        },
+      }
+    );
+    role.node.tryRemoveChild("DefaultPolicy");
+    this.dbClusterPostgreSqlLogUploader = dbClusterPostgreSqlLogUploader;
   }
 }
