@@ -1,12 +1,18 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { BaseConstructProps, BaseConstruct } from "./base-construct";
-import { SchedulerProperty } from "../../parameter";
+import {
+  TargetDbClusterProperty,
+  LogDestinationProperty,
+  SchedulerProperty,
+} from "../../parameter";
 
 export interface SchedulerConstructProps
   extends SchedulerProperty,
+    TargetDbClusterProperty,
+    LogDestinationProperty,
     BaseConstructProps {
-  targetFunction: cdk.aws_lambda.IFunction;
+  stateMachine: cdk.aws_stepfunctions.IStateMachine;
 }
 
 export class SchedulerConstruct extends BaseConstruct {
@@ -14,7 +20,6 @@ export class SchedulerConstruct extends BaseConstruct {
     super(scope, id, props);
 
     // Role
-
     const role = new cdk.aws_iam.Role(this, "Role", {
       assumedBy: new cdk.aws_iam.ServicePrincipal("scheduler.amazonaws.com"),
       inlinePolicies: {
@@ -22,8 +27,8 @@ export class SchedulerConstruct extends BaseConstruct {
           statements: [
             new cdk.aws_iam.PolicyStatement({
               effect: cdk.aws_iam.Effect.ALLOW,
-              resources: [props.targetFunction.functionArn],
-              actions: ["lambda:InvokeFunction"],
+              resources: [props.stateMachine.stateMachineArn],
+              actions: ["states:StartExecution"],
             }),
           ],
         }),
@@ -31,7 +36,6 @@ export class SchedulerConstruct extends BaseConstruct {
     });
 
     // EventBridge Scheduler Group
-
     const scheduleGroup = new cdk.aws_scheduler.CfnScheduleGroup(
       this,
       "ScheduleGroup"
@@ -45,8 +49,13 @@ export class SchedulerConstruct extends BaseConstruct {
       groupName: scheduleGroup.name,
       scheduleExpression: props.scheduleExpression,
       target: {
-        arn: props.targetFunction.functionArn,
+        arn: props.stateMachine.stateMachineArn,
         roleArn: role.roleArn,
+        input: JSON.stringify({
+          DbClusterIdentifier: props.dbClusterIdentifier,
+          LogDestinationBucket: props.bucketName,
+          LogRangeMinutes: props.logRangeMinutes,
+        }),
         retryPolicy: {
           maximumEventAgeInSeconds: 60,
           maximumRetryAttempts: 0,

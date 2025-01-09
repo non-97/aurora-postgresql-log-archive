@@ -1,11 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { BaseConstructProps, BaseConstruct } from "./base-construct";
-import {
-  LambdaProperty,
-  DbClusterProperty,
-  LogDestinationProperty,
-} from "../../parameter";
+import { LambdaProperty, LogDestinationProperty } from "../../parameter";
 import * as path from "path";
 
 export interface LambdaConstructProps

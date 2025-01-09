@@ -1,7 +1,8 @@
 import * as cdk from "aws-cdk-lib";
 
-export interface DbClusterProperty {
+export interface TargetDbClusterProperty {
   dbClusterIdentifier: string;
+  logRangeMinutes: number;
 }
 
 export interface LogDestinationProperty {
@@ -29,7 +30,7 @@ export interface SchedulerProperty {
 
 export interface AuroraPostgreSqlLogArchiveProperty {
   lambdaProperty: LambdaProperty;
-  dbClusterProperty: DbClusterProperty;
+  targetDbClusterProperty: TargetDbClusterProperty;
   logDestinationProperty: LogDestinationProperty;
   schedulerProperty?: SchedulerProperty;
 }

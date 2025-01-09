@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { LambdaConstruct } from "./construct/lambda-construct";
 import { WorkflowConstruct } from "./construct/workflow-construct";
+import { SchedulerConstruct } from "./construct/scheduler-construct";
 import { AuroraPostgreSqlLogArchiveProperty } from "../parameter/index";
 
 export interface AuroraPostgreSqlLogArchiveStackProperty
@@ -26,5 +27,20 @@ export class AuroraPostgresqlLogArchiveStack extends cdk.Stack {
       ...props.logDestinationProperty,
       lambdaConstruct,
     });
+
+    if (!props.schedulerProperty) {
+      return;
+    }
+
+    const schedulerConstruct = new SchedulerConstruct(
+      this,
+      "SchedulerConstruct",
+      {
+        ...props.targetDbClusterProperty,
+        ...props.logDestinationProperty,
+        ...props.schedulerProperty,
+        stateMachine: workflowConstruct.stateMachine,
+      }
+    );
   }
 }

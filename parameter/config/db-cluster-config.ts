@@ -1,5 +1,6 @@
-import { DbClusterProperty } from "../types";
+import { TargetDbClusterProperty } from "../types";
 
-export const dbClusterConfig: DbClusterProperty = {
+export const targetDbClusterConfig: TargetDbClusterProperty = {
   dbClusterIdentifier: "database-1",
+  logRangeMinutes: 30,
 };

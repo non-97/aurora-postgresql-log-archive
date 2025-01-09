@@ -1,5 +1,5 @@
 import { AuroraPostgreSqlLogArchiveStackProperty } from "../types";
-import { dbClusterConfig } from "./db-cluster-config";
+import { targetDbClusterConfig } from "./db-cluster-config";
 import { lambdaConfig } from "./lambda-config";
 import { logDestinationConfig } from "./log-destination-config";
 import { schedulerConfig } from "./scheduler-config";
@@ -12,10 +12,8 @@ export const auroraPostgreSqlLogArchiveStackProperty: AuroraPostgreSqlLogArchive
     },
     props: {
       lambdaProperty: lambdaConfig,
-      dbClusterProperty: dbClusterConfig,
+      targetDbClusterProperty: targetDbClusterConfig,
       logDestinationProperty: logDestinationConfig,
       schedulerProperty: schedulerConfig,
     },
   };
-
-export { lambdaConfig };
