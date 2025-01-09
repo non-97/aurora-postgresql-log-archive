@@ -18,6 +18,9 @@ export interface LambdaProperty {
   functionApplicationLogLevel?: cdk.aws_lambda.ApplicationLogLevel;
   functionSystemLogLevel?: cdk.aws_lambda.SystemLogLevel;
   powertoolsLogLevel?: "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL";
+  uploaderMemorySize?: number;
+  uploaderTimeout?: cdk.Duration;
+  uploaderEphemeralStorageSize?: cdk.Size;
 }
 
 export interface SchedulerProperty {

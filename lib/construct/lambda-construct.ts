@@ -120,9 +120,10 @@ export class LambdaConstruct extends BaseConstruct {
         ),
         role,
         architecture: cdk.aws_lambda.Architecture.ARM_64,
-        memorySize: 1024,
-        timeout: cdk.Duration.seconds(600),
-        ephemeralStorageSize: cdk.Size.gibibytes(2),
+        memorySize: props.uploaderMemorySize ?? 1024,
+        timeout: props.uploaderTimeout ?? cdk.Duration.seconds(600),
+        ephemeralStorageSize:
+          props.uploaderEphemeralStorageSize ?? cdk.Size.gibibytes(2),
         tracing: cdk.aws_lambda.Tracing.ACTIVE,
         logRetention: cdk.aws_logs.RetentionDays.ONE_YEAR,
         loggingFormat: cdk.aws_lambda.LoggingFormat.JSON,
