@@ -10,7 +10,6 @@ import * as path from "path";
 
 export interface LambdaConstructProps
   extends LambdaProperty,
-    DbClusterProperty,
     LogDestinationProperty,
     BaseConstructProps {}
 
@@ -34,7 +33,7 @@ export class LambdaConstruct extends BaseConstruct {
           resources: [
             `arn:aws:rds:${cdk.Stack.of(this).region}:${
               cdk.Stack.of(this).account
-            }:cluster:${props.dbClusterIdentifier}`,
+            }:cluster:*`,
           ],
           actions: ["rds:DescribeDBClusters"],
         }),

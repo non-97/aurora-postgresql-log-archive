@@ -10,7 +10,6 @@ import {
 
 export interface WorkflowProps
   extends LambdaProperty,
-    DbClusterProperty,
     LogDestinationProperty,
     BaseConstructProps {
   lambdaConstruct: LambdaConstruct;

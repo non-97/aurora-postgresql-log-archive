@@ -18,13 +18,11 @@ export class AuroraPostgresqlLogArchiveStack extends cdk.Stack {
 
     const lambdaConstruct = new LambdaConstruct(this, "LambdaConstruct", {
       ...props.lambdaProperty,
-      ...props.dbClusterProperty,
       ...props.logDestinationProperty,
     });
 
     const workflowConstruct = new WorkflowConstruct(this, "WorkflowConstruct", {
       ...props.lambdaProperty,
-      ...props.dbClusterProperty,
       ...props.logDestinationProperty,
       lambdaConstruct,
     });
