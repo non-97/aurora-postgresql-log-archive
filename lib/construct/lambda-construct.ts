@@ -10,8 +10,8 @@ export interface LambdaConstructProps
     BaseConstructProps {}
 
 export class LambdaConstruct extends BaseConstruct {
-  readonly dbClusterPostgreSqlLogFilter: cdk.aws_lambda.IFunction;
-  readonly dbClusterPostgreSqlLogUploader: cdk.aws_lambda.IFunction;
+  readonly dbClusterPostgreSqlLogFileFilter: cdk.aws_lambda.IFunction;
+  readonly rdsLogFileUploader: cdk.aws_lambda.IFunction;
 
   constructor(scope: Construct, id: string, props: LambdaConstructProps) {
     super(scope, id, props);
@@ -75,14 +75,17 @@ export class LambdaConstruct extends BaseConstruct {
       );
 
     // Lambda Function
-    const dbClusterPostgreSqlLogFilter = new cdk.aws_lambda.Function(
+    const dbClusterPostgreSqlLogFileFilter = new cdk.aws_lambda.Function(
       this,
-      "DbClusterPostgreSqlLogFilter",
+      "DbClusterPostgreSqlLogFileFilter",
       {
         runtime: cdk.aws_lambda.Runtime.PYTHON_3_13,
         handler: "index.lambda_handler",
         code: cdk.aws_lambda.Code.fromAsset(
-          path.join(__dirname, "../src/lambda/db_cluster_postgresql_log_filter")
+          path.join(
+            __dirname,
+            "../src/lambda/db_cluster_postgresql_log_file_filter"
+          )
         ),
         role,
         architecture: cdk.aws_lambda.Architecture.ARM_64,
@@ -95,25 +98,22 @@ export class LambdaConstruct extends BaseConstruct {
         layers: [lambdaPowertoolsLayer],
         environment: {
           POWERTOOLS_LOG_LEVEL: props.powertoolsLogLevel || "INFO",
-          POWERTOOLS_SERVICE_NAME: "db-cluster-postgresql-log-filter",
+          POWERTOOLS_SERVICE_NAME: "db-cluster-postgresql-log_file-filter",
           ENABLE_COMPRESSION: props.enableCompression || "false",
         },
       }
     );
     role.node.tryRemoveChild("DefaultPolicy");
-    this.dbClusterPostgreSqlLogFilter = dbClusterPostgreSqlLogFilter;
+    this.dbClusterPostgreSqlLogFileFilter = dbClusterPostgreSqlLogFileFilter;
 
-    const dbClusterPostgreSqlLogUploader = new cdk.aws_lambda.Function(
+    const rdsLogFileUploader = new cdk.aws_lambda.Function(
       this,
-      "DbClusterPostgreSqlLogUploader",
+      "RdsLogFileUploader",
       {
         runtime: cdk.aws_lambda.Runtime.PYTHON_3_13,
         handler: "index.lambda_handler",
         code: cdk.aws_lambda.Code.fromAsset(
-          path.join(
-            __dirname,
-            "../src/lambda/db_cluster_postgresql_log_uploader"
-          )
+          path.join(__dirname, "../src/lambda/rds_log_file_uploader")
         ),
         role,
         architecture: cdk.aws_lambda.Architecture.ARM_64,
@@ -129,12 +129,12 @@ export class LambdaConstruct extends BaseConstruct {
         layers: [lambdaPowertoolsLayer],
         environment: {
           POWERTOOLS_LOG_LEVEL: props.powertoolsLogLevel || "INFO",
-          POWERTOOLS_SERVICE_NAME: "db-cluster-postgresql-log-uploader",
+          POWERTOOLS_SERVICE_NAME: "rds-log-file-uploader",
           ENABLE_COMPRESSION: props.enableCompression || "false",
         },
       }
     );
     role.node.tryRemoveChild("DefaultPolicy");
-    this.dbClusterPostgreSqlLogUploader = dbClusterPostgreSqlLogUploader;
+    this.rdsLogFileUploader = rdsLogFileUploader;
   }
 }

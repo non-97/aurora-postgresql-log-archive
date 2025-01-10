@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import boto3
 from aws_lambda_powertools import Logger, Tracer
 
-from uploader_constants import (
+from rds_log_file_uploader_constants import (
     MULTIPART_THRESHOLD,
     MULTIPART_CHUNKSIZE,
     MAX_CONCURRENCY,
@@ -15,8 +15,8 @@ tracer = Tracer()
 
 
 @dataclass(frozen=True)
-class RdsLogUploaderConfig:
-    """イベントから設定値を取得するデータクラス"""
+class RdsFileLogUploaderConfig:
+    """RdsFileLogUploader 設定値を管理するデータクラス"""
 
     db_instance_identifier: str
     log_destination_bucket: str
@@ -35,10 +35,10 @@ class RdsLogUploaderConfig:
             raise ValueError("ObjectKey is required")
 
 
-class RdsLogUploader:
+class RdsFileLogUploader:
     """RDSログをS3にアップロードするクラス"""
 
-    def __init__(self, config: RdsLogUploaderConfig):
+    def __init__(self, config: RdsFileLogUploaderConfig):
         self.config = config
         self.s3_client = boto3.client("s3")
         self.compression_enabled = (
@@ -96,7 +96,7 @@ class RdsLogUploader:
                     )
 
     @tracer.capture_method
-    def upload_log(self, file_path: str) -> bool:
+    def upload_log_file(self, file_path: str) -> bool:
         """
         ログファイルをS3にアップロード
 

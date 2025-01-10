@@ -7,7 +7,10 @@ import boto3
 from botocore.exceptions import ClientError
 from aws_lambda_powertools import Logger, Tracer
 
-from filter_constants import LOG_FILENAME_PATTERN, MAX_WORKERS
+from db_cluster_postgresql_log_file_filter_constants import (
+    LOG_FILENAME_PATTERN,
+    MAX_WORKERS,
+)
 
 
 logger = Logger()
@@ -49,8 +52,8 @@ class LogFile:
 
 
 @dataclass(frozen=True)
-class LogFilterConfig:
-    """イベントから設定値を取得するデータクラス"""
+class LogFileFilterConfig:
+    """DbClusterPostgreSqlLogFilter の設定値を管理するデータクラス"""
 
     db_cluster_identifier: str
     log_destination_bucket: str
@@ -67,10 +70,10 @@ class LogFilterConfig:
             raise ValueError("LogRangeMinutes must be greater than 0")
 
 
-class DbClusterPostgreSqlLogFilter:
-    """DBクラスターログ処理クラス"""
+class DbClusterPostgreSqlLogFileFilter:
+    """DBクラスターログファイルフィルター処理クラス"""
 
-    def __init__(self, config: LogFilterConfig):
+    def __init__(self, config: LogFileFilterConfig):
         self.config = config
         self.logger = logger
         self.rds_client = boto3.client("rds")
@@ -130,7 +133,7 @@ class DbClusterPostgreSqlLogFilter:
             raise
 
     @tracer.capture_method
-    def _get_log_files(self, db_instance: str) -> List[Dict[str, Any]]:
+    def _get_log_file_info_list(self, db_instance: str) -> List[Dict[str, Any]]:
         """指定されたDBインスタンスのログファイル一覧の取得
 
         Args:
@@ -335,7 +338,7 @@ class DbClusterPostgreSqlLogFilter:
             return None
 
     @tracer.capture_method
-    def filter_instance_logs(self, db_instance: str) -> List[LogFile]:
+    def filter_instance_log_files(self, db_instance: str) -> List[LogFile]:
         """指定されたDBインスタンスのログファイルの処理
 
         以下の処理の実施
@@ -356,7 +359,7 @@ class DbClusterPostgreSqlLogFilter:
 
         self.logger.info("Processing instance logs", extra={"db_instance": db_instance})
 
-        log_files = self._get_log_files(db_instance)
+        log_files = self._get_log_file_info_list(db_instance)
         filtered_logs = self._filter_log_files(log_files)
         result_logs = []
 
@@ -384,7 +387,7 @@ class DbClusterPostgreSqlLogFilter:
         return result_logs
 
     @tracer.capture_method
-    def filter_cluster_logs(self) -> List[Dict[str, Any]]:
+    def filter_cluster_log_files(self) -> List[Dict[str, Any]]:
         """DBクラスター全体のログファイルの処理
 
         クラスター内の全DBインスタンスのログを並列で処理し、S3にアップロードされていないログファイルの情報を返す
@@ -418,7 +421,9 @@ class DbClusterPostgreSqlLogFilter:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 # 各DBインスタンスに対して並行でログ処理を実行
                 future_to_instance = {
-                    executor.submit(self.filter_instance_logs, db_instance): db_instance
+                    executor.submit(
+                        self.filter_instance_log_files, db_instance
+                    ): db_instance
                     for db_instance in db_instances
                 }
 

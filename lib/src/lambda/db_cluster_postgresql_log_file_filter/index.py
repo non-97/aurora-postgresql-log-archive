@@ -4,8 +4,12 @@ from typing import Dict, Any, List
 from aws_lambda_powertools import Logger, Tracer
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
-from filter_constants import DEFAULT_LOG_RANGE_MINUTES
-from filter import DbClusterPostgreSqlLogFilter, LogFilterConfig, LogFile
+from db_cluster_postgresql_log_file_filter_constants import DEFAULT_LOG_RANGE_MINUTES
+from db_cluster_postgresql_log_file_filter import (
+    DbClusterPostgreSqlLogFileFilter,
+    LogFileFilterConfig,
+    LogFile,
+)
 
 logger = Logger()
 tracer = Tracer()
@@ -36,7 +40,7 @@ def lambda_handler(
     """
     try:
         logger.debug("Processing event", extra={"event": event})
-        config = LogFilterConfig(
+        config = LogFileFilterConfig(
             db_cluster_identifier=event.get("DbClusterIdentifier"),
             log_destination_bucket=event.get("LogDestinationBucket"),
             log_range_minutes=event.get("LogRangeMinutes", DEFAULT_LOG_RANGE_MINUTES),
@@ -44,8 +48,10 @@ def lambda_handler(
             == "true",
         )
 
-        db_cluster_postgresql_log_filter = DbClusterPostgreSqlLogFilter(config)
-        result: LogFile = db_cluster_postgresql_log_filter.filter_cluster_logs()
+        db_cluster_postgresql_log_file_filter = DbClusterPostgreSqlLogFileFilter(config)
+        result: LogFile = (
+            db_cluster_postgresql_log_file_filter.filter_cluster_log_files()
+        )
 
         logger.info(
             "Lambda execution completed",

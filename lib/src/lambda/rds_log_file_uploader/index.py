@@ -5,8 +5,8 @@ from typing import Dict, Any
 from aws_lambda_powertools import Logger, Tracer
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
-from downloader import RdsLogDownloader, RdsLogDownLoaderConfig
-from uploader import RdsLogUploader, RdsLogUploaderConfig
+from rds_log_file_downloader import RdsLogFileDownloader, RdsLogDownLoaderConfig
+from rds_log_file_uploader import RdsFileLogUploader, RdsFileLogUploaderConfig
 
 logger = Logger()
 tracer = Tracer()
@@ -19,12 +19,12 @@ def lambda_handler(event: Dict[str, Any], context: LambdaContext) -> Dict[str, A
     try:
         logger.debug("Processing event", extra={"event": event})
 
-        rds_log_downloader_config = RdsLogDownLoaderConfig(
+        rds_log_file_downloader_config = RdsLogDownLoaderConfig(
             db_instance_identifier=event["DbInstanceIdentifier"],
             log_file_name=event["LogFileName"],
         )
 
-        rds_log_uploader_config = RdsLogUploaderConfig(
+        rds_log_file_uploader_config = RdsFileLogUploaderConfig(
             db_instance_identifier=event["DbInstanceIdentifier"],
             log_destination_bucket=event["LogDestinationBucket"],
             last_written=event["LastWritten"],
@@ -35,12 +35,12 @@ def lambda_handler(event: Dict[str, Any], context: LambdaContext) -> Dict[str, A
             temp_path = temp_file.name
 
         try:
-            downloader = RdsLogDownloader(rds_log_downloader_config)
+            downloader = RdsLogFileDownloader(rds_log_file_downloader_config)
             if not downloader.download_log_file(temp_path):
                 raise Exception("Failed to download log file")
 
-            uploader = RdsLogUploader(rds_log_uploader_config)
-            if not uploader.upload_log(
+            uploader = RdsFileLogUploader(rds_log_file_uploader_config)
+            if not uploader.upload_log_file(
                 temp_path,
             ):
                 raise Exception("Failed to upload log file")

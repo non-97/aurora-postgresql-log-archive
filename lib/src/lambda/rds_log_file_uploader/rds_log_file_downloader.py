@@ -9,7 +9,7 @@ from botocore.awsrequest import AWSRequest
 import botocore.auth as auth
 from aws_lambda_powertools import Logger, Tracer
 
-from uploader_constants import (
+from rds_log_file_uploader_constants import (
     DEFAULT_REGION,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
@@ -22,7 +22,7 @@ tracer = Tracer()
 
 @dataclass(frozen=True)
 class RdsLogDownLoaderConfig:
-    """設定値を管理するデータクラス"""
+    """RdsLogFileDownloader の設定値を管理するデータクラス"""
 
     db_instance_identifier: str
     log_file_name: str
@@ -35,7 +35,7 @@ class RdsLogDownLoaderConfig:
             raise ValueError("LogFileName is required")
 
 
-class RdsLogDownloader:
+class RdsLogFileDownloader:
     """RDSログをダウンロードするクラス"""
 
     def __init__(self, config: RdsLogDownLoaderConfig, region: str = None):

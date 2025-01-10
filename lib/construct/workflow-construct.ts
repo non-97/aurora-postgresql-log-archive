@@ -16,12 +16,13 @@ export class WorkflowConstruct extends BaseConstruct {
   constructor(scope: Construct, id: string, props: WorkflowProps) {
     super(scope, id, props);
 
-    const dbClusterPostgreSqlLogFilter =
+    const dbClusterPostgreSqlLogFileFilter =
       new cdk.aws_stepfunctions_tasks.LambdaInvoke(
         this,
-        "DbClusterPostgreSqlLogFilter",
+        "DbClusterPostgreSqlLogFileFilter",
         {
-          lambdaFunction: props.lambdaConstruct.dbClusterPostgreSqlLogFilter,
+          lambdaFunction:
+            props.lambdaConstruct.dbClusterPostgreSqlLogFileFilter,
           payload: cdk.aws_stepfunctions.TaskInput.fromObject({
             DbClusterIdentifier: cdk.aws_stepfunctions.JsonPath.stringAt(
               "$.DbClusterIdentifier"
@@ -35,27 +36,24 @@ export class WorkflowConstruct extends BaseConstruct {
         }
       );
 
-    const dbClusterPostgreSqlLogUploader =
-      new cdk.aws_stepfunctions_tasks.LambdaInvoke(
-        this,
-        "DbClusterPostgreSqlLogUploader",
-        {
-          lambdaFunction: props.lambdaConstruct.dbClusterPostgreSqlLogUploader,
-          payload: cdk.aws_stepfunctions.TaskInput.fromObject({
-            DbInstanceIdentifier: cdk.aws_stepfunctions.JsonPath.stringAt(
-              "$.DbInstanceIdentifier"
-            ),
-            LogDestinationBucket: cdk.aws_stepfunctions.JsonPath.stringAt(
-              "$.LogDestinationBucket"
-            ),
-            LastWritten:
-              cdk.aws_stepfunctions.JsonPath.stringAt("$.LastWritten"),
-            LogFileName:
-              cdk.aws_stepfunctions.JsonPath.stringAt("$.LogFileName"),
-            ObjectKey: cdk.aws_stepfunctions.JsonPath.stringAt("$.ObjectKey"),
-          }),
-        }
-      );
+    const rdsLogFileUploader = new cdk.aws_stepfunctions_tasks.LambdaInvoke(
+      this,
+      "RdsLogFileUploader",
+      {
+        lambdaFunction: props.lambdaConstruct.rdsLogFileUploader,
+        payload: cdk.aws_stepfunctions.TaskInput.fromObject({
+          DbInstanceIdentifier: cdk.aws_stepfunctions.JsonPath.stringAt(
+            "$.DbInstanceIdentifier"
+          ),
+          LogDestinationBucket: cdk.aws_stepfunctions.JsonPath.stringAt(
+            "$.LogDestinationBucket"
+          ),
+          LastWritten: cdk.aws_stepfunctions.JsonPath.stringAt("$.LastWritten"),
+          LogFileName: cdk.aws_stepfunctions.JsonPath.stringAt("$.LogFileName"),
+          ObjectKey: cdk.aws_stepfunctions.JsonPath.stringAt("$.ObjectKey"),
+        }),
+      }
+    );
 
     const map = new cdk.aws_stepfunctions.Map(this, "Map", {
       itemsPath: "$.Payload",
@@ -68,8 +66,8 @@ export class WorkflowConstruct extends BaseConstruct {
       "testStateMachine",
       {
         definitionBody: cdk.aws_stepfunctions.DefinitionBody.fromChainable(
-          dbClusterPostgreSqlLogFilter.next(
-            map.itemProcessor(dbClusterPostgreSqlLogUploader)
+          dbClusterPostgreSqlLogFileFilter.next(
+            map.itemProcessor(rdsLogFileUploader)
           )
         ),
         tracingEnabled: true,
