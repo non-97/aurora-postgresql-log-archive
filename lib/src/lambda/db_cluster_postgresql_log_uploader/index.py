@@ -4,6 +4,7 @@ import time
 import tempfile
 import urllib.request
 import urllib.error
+import gzip
 from http.client import IncompleteRead
 from typing import Dict, Any
 import boto3
@@ -133,6 +134,61 @@ class RdsLogUploader:
         self.s3_client = boto3.client("s3")
         self.destination_bucket = destination_bucket
 
+        # 環境変数から圧縮設定を取得
+        self.compression_enabled = (
+            os.environ.get("ENABLE_COMPRESSION", "false").lower() == "true"
+        )
+
+    def _compress_file(self, file_path: str) -> bool:
+        """
+        ファイルをGZIP圧縮
+
+        Args:
+            file_path: 圧縮対象のファイルパス
+
+        Returns:
+            bool: 圧縮成功時True
+        """
+        temp_path = f"{file_path}.tmp"
+        try:
+            original_size = os.path.getsize(file_path)
+
+            # 圧縮
+            with open(file_path, "rb") as f_in:
+                with gzip.open(temp_path, "wb", compresslevel=6) as f_out:
+                    f_out.write(f_in.read())
+
+            # 圧縮したファイルで元のファイルを置き換え
+            os.replace(temp_path, file_path)
+
+            logger.info(
+                "Successfully compressed file",
+                extra={
+                    "file_path": file_path,
+                    "original_size": original_size,
+                    "compressed_size": os.path.getsize(file_path),
+                },
+            )
+            return True
+
+        except Exception as e:
+            logger.exception(
+                "Failed to compress file",
+                extra={"file_path": file_path, "error": str(e)},
+            )
+            return False
+
+        finally:
+            # 一時ファイルが残っている場合は削除
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception as e:
+                    logger.warning(
+                        "Failed to remove temporary file",
+                        extra={"temp_path": temp_path, "error": str(e)},
+                    )
+
     @tracer.capture_method
     def upload_log(
         self, file_path: str, object_key: str, db_instance_id: str, last_written: int
@@ -150,21 +206,37 @@ class RdsLogUploader:
             bool: アップロード成功時True
         """
         try:
+            content_type = "text/plain"
+
+            # 圧縮が有効な場合のみ圧縮処理を実行
+            if self.compression_enabled:
+                if self._compress_file(file_path):
+                    content_type = "application/gzip"
+                else:
+                    logger.warning("Compression failed, uploading uncompressed file")
+
             # メタデータの設定
             metadata = {
                 "LastWritten": str(last_written),
                 "DbInstanceIdentifier": db_instance_id,
+                "Compressed": str(self.compression_enabled).lower(),
             }
 
             self.s3_client.upload_file(
                 Filename=file_path,
                 Bucket=self.destination_bucket,
                 Key=object_key,
-                ExtraArgs={"Metadata": metadata, "ContentType": "text/plain"},
+                ExtraArgs={
+                    "Metadata": metadata,
+                    "ContentType": content_type,
+                    "ContentEncoding": (
+                        "gzip" if self.compression_enabled else "identity"
+                    ),
+                },
                 Config=boto3.s3.transfer.TransferConfig(
-                    multipart_threshold=8 * 1024 * 1024,  # 8MB
+                    multipart_threshold=8 * 1024 * 1024,
                     max_concurrency=10,
-                    multipart_chunksize=8 * 1024 * 1024,  # 8MB
+                    multipart_chunksize=8 * 1024 * 1024,
                     use_threads=True,
                 ),
             )
@@ -176,6 +248,7 @@ class RdsLogUploader:
                     "bucket": self.destination_bucket,
                     "object_key": object_key,
                     "size": os.path.getsize(file_path),
+                    "compressed": self.compression_enabled,
                     "metadata": metadata,
                 },
             )

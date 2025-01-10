@@ -1,4 +1,5 @@
 import sys
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -48,6 +49,7 @@ class LogDestinationConfig:
     db_cluster_identifier: str
     log_destination_bucket: str
     log_range_minutes: int = DEFAULT_LOG_RANGE_MINUTES
+    compression_enabled: bool = False
 
     def __post_init__(self) -> None:
         """初期化後のバリデーション"""
@@ -297,11 +299,16 @@ class DbClusterPostgreSqlLogFilter:
             date_part = log_filename.split(".")[-1]
             date_obj = datetime.strptime(date_part, "%Y-%m-%d-%H%M")
 
-            object_key = (
+            base_key = (
                 f"{self.config.db_cluster_identifier}/"
                 f"{db_instance}/raw/"
                 f"{date_obj.strftime('%Y/%m/%d/%H')}/"
                 f"postgresql.log.{date_part}"
+            )
+
+            # 圧縮が有効な場合は.gzを付与
+            object_key = (
+                f"{base_key}.gz" if self.config.compression_enabled else base_key
             )
 
             self.logger.debug(
@@ -310,6 +317,7 @@ class DbClusterPostgreSqlLogFilter:
                     "db_instance": db_instance,
                     "log_filename": log_filename,
                     "object_key": object_key,
+                    "compression_enabled": self.config.compression_enabled,
                 },
             )
             return object_key
@@ -457,18 +465,27 @@ def lambda_handler(
     Raises:
         SystemExit: 予期しないエラーが発生した場合
     """
+
     try:
         logger.debug("Processing event", extra={"event": event})
         config = LogDestinationConfig(
             db_cluster_identifier=event.get("DbClusterIdentifier"),
             log_destination_bucket=event.get("LogDestinationBucket"),
             log_range_minutes=event.get("LogRangeMinutes", DEFAULT_LOG_RANGE_MINUTES),
+            compression_enabled=os.environ.get("ENABLE_COMPRESSION", "false").lower()
+            == "true",
         )
 
         db_cluster_postgresql_log_filter = DbClusterPostgreSqlLogFilter(config)
         result = db_cluster_postgresql_log_filter.filter_cluster_logs()
 
-        logger.info("Lambda execution completed", extra={"processed_logs": result})
+        logger.info(
+            "Lambda execution completed",
+            extra={
+                "processed_logs": result,
+                "compression_enabled": config.compression_enabled,
+            },
+        )
         return result
 
     except Exception as e:

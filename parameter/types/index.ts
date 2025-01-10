@@ -22,6 +22,7 @@ export interface LambdaProperty {
   uploaderMemorySize?: number;
   uploaderTimeout?: cdk.Duration;
   uploaderEphemeralStorageSize?: cdk.Size;
+  enableCompression?: "true" | "false";
 }
 
 export interface SchedulerProperty {

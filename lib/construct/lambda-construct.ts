@@ -96,6 +96,7 @@ export class LambdaConstruct extends BaseConstruct {
         environment: {
           POWERTOOLS_LOG_LEVEL: props.powertoolsLogLevel || "INFO",
           POWERTOOLS_SERVICE_NAME: "db-cluster-postgresql-log-filter",
+          ENABLE_COMPRESSION: props.enableCompression || "false",
         },
       }
     );
@@ -116,10 +117,10 @@ export class LambdaConstruct extends BaseConstruct {
         ),
         role,
         architecture: cdk.aws_lambda.Architecture.ARM_64,
-        memorySize: props.uploaderMemorySize ?? 1024,
-        timeout: props.uploaderTimeout ?? cdk.Duration.seconds(600),
+        memorySize: props.uploaderMemorySize || 1024,
+        timeout: props.uploaderTimeout || cdk.Duration.seconds(600),
         ephemeralStorageSize:
-          props.uploaderEphemeralStorageSize ?? cdk.Size.gibibytes(2),
+          props.uploaderEphemeralStorageSize || cdk.Size.gibibytes(1),
         tracing: cdk.aws_lambda.Tracing.ACTIVE,
         logRetention: cdk.aws_logs.RetentionDays.ONE_YEAR,
         loggingFormat: cdk.aws_lambda.LoggingFormat.JSON,
@@ -129,6 +130,7 @@ export class LambdaConstruct extends BaseConstruct {
         environment: {
           POWERTOOLS_LOG_LEVEL: props.powertoolsLogLevel || "INFO",
           POWERTOOLS_SERVICE_NAME: "db-cluster-postgresql-log-uploader",
+          ENABLE_COMPRESSION: props.enableCompression || "false",
         },
       }
     );
