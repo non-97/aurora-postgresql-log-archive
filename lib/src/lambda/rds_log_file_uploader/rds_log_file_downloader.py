@@ -10,7 +10,6 @@ import botocore.auth as auth
 from aws_lambda_powertools import Logger, Tracer
 
 from rds_log_file_uploader_constants import (
-    DEFAULT_REGION,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
     CHUNK_SIZE,
@@ -41,9 +40,8 @@ class RdsLogFileDownloader:
     def __init__(self, config: RdsLogDownLoaderConfig, region: str = None):
         self.config = config
         self.session = boto3.Session(region_name=region)
-        self.region = self.session.region_name or os.environ.get(
-            "AWS_REGION", DEFAULT_REGION
-        )
+        self.region = self.session.region_name or os.environ.get("AWS_REGION")
+
         self.credentials = self.session.get_credentials()
         self.remote_host = f"rds.{self.region}.amazonaws.com"
 

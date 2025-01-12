@@ -1,4 +1,3 @@
-DEFAULT_REGION = "us-east-1"
 DEFAULT_RETRIES = 3
 DEFAULT_RETRY_DELAY = 5
 CHUNK_SIZE = 8192  # 8KB for download chunks
