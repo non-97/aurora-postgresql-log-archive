@@ -46,7 +46,7 @@ export class SchedulerConstruct extends BaseConstruct {
       flexibleTimeWindow: {
         mode: "OFF",
       },
-      groupName: scheduleGroup.name,
+      groupName: scheduleGroup.ref,
       scheduleExpression: props.scheduleExpression,
       target: {
         arn: props.stateMachine.stateMachineArn,
