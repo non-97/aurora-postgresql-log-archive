@@ -45,6 +45,7 @@ class RdsFileLogUploader:
             os.environ.get("ENABLE_COMPRESSION", "false").lower() == "true"
         )
 
+    @tracer.capture_method
     def _compress_file(self, file_path: str) -> bool:
         """
         ファイルをGZIP圧縮
@@ -60,20 +61,40 @@ class RdsFileLogUploader:
         try:
             original_size = os.path.getsize(file_path)
 
-            # 圧縮
+            # Lambda関数のメモリサイズの1/4をチャンクサイズとして使用（バイト単位）
+            chunk_size = (
+                int(os.environ.get("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")) * 1024 * 1024
+            ) // 4
+
+            logger.debug(
+                "Compressing file with chunks",
+                extra={
+                    "file_path": file_path,
+                    "original_size": original_size,
+                    "chunk_size": chunk_size,
+                },
+            )
+
+            # チャンク単位で圧縮
             with open(file_path, "rb") as f_in:
                 with gzip.open(temp_path, "wb", compresslevel=6) as f_out:
-                    f_out.write(f_in.read())
+                    while True:
+                        chunk = f_in.read(chunk_size)
+                        if not chunk:
+                            break
+                        f_out.write(chunk)
 
             # 圧縮したファイルで元のファイルを置き換え
             os.replace(temp_path, file_path)
 
+            compressed_size = os.path.getsize(file_path)
             logger.info(
                 "Successfully compressed file",
                 extra={
                     "file_path": file_path,
                     "original_size": original_size,
-                    "compressed_size": os.path.getsize(file_path),
+                    "compressed_size": compressed_size,
+                    "compression_ratio": f"{(compressed_size / original_size) * 100:.2f}%",
                 },
             )
             return True
