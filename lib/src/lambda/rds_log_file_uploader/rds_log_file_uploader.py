@@ -61,6 +61,14 @@ class RdsFileLogUploader:
         try:
             original_size = os.path.getsize(file_path)
 
+            # ファイルサイズが0の場合は圧縮をスキップ
+            if original_size == 0:
+                logger.info(
+                    "Skipping compression for empty file",
+                    extra={"file_path": file_path},
+                )
+                return True
+
             # Lambda関数のメモリサイズの1/4をチャンクサイズとして使用（バイト単位）
             chunk_size = (
                 int(os.environ.get("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")) * 1024 * 1024
