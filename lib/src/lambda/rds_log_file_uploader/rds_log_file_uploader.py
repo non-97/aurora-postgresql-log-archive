@@ -69,10 +69,10 @@ class RdsFileLogUploader:
                 )
                 return True
 
-            # Lambda関数のメモリサイズの1/4をチャンクサイズとして使用（バイト単位）
+            # Lambda関数のメモリサイズの1/8をチャンクサイズとして使用（バイト単位）
             chunk_size = (
                 int(os.environ.get("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")) * 1024 * 1024
-            ) // 4
+            ) // 8
 
             logger.debug(
                 "Compressing file with chunks",
