@@ -12,7 +12,7 @@ from aws_lambda_powertools import Logger, Tracer
 from rds_log_file_uploader_constants import (
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
-    CHUNK_SIZE,
+    DOWNLOAD_CHUNK_SIZE,
 )
 
 logger = Logger()
@@ -101,7 +101,7 @@ class RdsLogFileDownloader:
                     open(output_path, "wb") as out_file,
                 ):
                     while True:
-                        chunk = response.read(CHUNK_SIZE)
+                        chunk = response.read(DOWNLOAD_CHUNK_SIZE)
                         if not chunk:
                             break
                         out_file.write(chunk)
